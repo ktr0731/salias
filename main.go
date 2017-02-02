@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -16,6 +18,7 @@ func main() {
 
 	command := os.Args[1]
 	subCommand := os.Args[2]
+	args := os.Args[3:]
 
 	bytes, _ := ioutil.ReadFile("./salias.toml")
 
@@ -25,10 +28,24 @@ func main() {
 		log.Fatal(err)
 	}
 
-	for k, alias := range commands.(map[string]interface{})[command].(map[string]interface{}) {
-		if k == subCommand {
-			fmt.Printf("%s is %s\n", k, alias)
-			break
+	if commands, ok := commands.(map[string]interface{})[command]; ok {
+		if aliases, ok := commands.(map[string]interface{}); ok {
+			for k, alias := range aliases {
+				if k == subCommand {
+					newArgs := make([]string, 1+len(args))
+					newArgs[0] = alias.(string)
+					for i := range args {
+						newArgs[i+1] = args[i]
+					}
+					fmt.Println(command, strings.Join(newArgs, " "))
+					b, err := exec.Command(command, newArgs...).Output()
+					if err != nil {
+						log.Fatal(err)
+					}
+					fmt.Println(string(b))
+				}
+			}
 		}
 	}
+
 }
