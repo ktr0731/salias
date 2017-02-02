@@ -20,7 +20,11 @@ func main() {
 	subCommand := os.Args[2]
 	args := os.Args[3:]
 
-	bytes, _ := ioutil.ReadFile("./salias.toml")
+	path := "./salias.toml"
+	if envPath := os.Getenv("SALIAS_PATH"); envPath != "" {
+		path = envPath
+	}
+	bytes, _ := ioutil.ReadFile(path)
 
 	var commands interface{}
 	err := toml.Unmarshal(bytes, &commands)
