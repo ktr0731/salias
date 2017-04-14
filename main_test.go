@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"testing"
@@ -19,12 +20,14 @@ func TestMain(t *testing.T) {
 	resetEnv := setTestEnv("SALIAS_PATH", "./salias_test.toml")
 	defer resetEnv()
 
-	bytes, err := exec.Command("go", "run", "main.go", "git", "l").Output()
+	b, err := exec.Command("go", "run", "main.go", "git", "l").Output()
 	if err != nil {
 		t.Error(err)
 	}
 
-	if len(bytes) == 0 {
+	if len(b) == 0 {
 		t.Error(err)
 	}
+
+	fmt.Println(string(b))
 }

@@ -13,7 +13,8 @@ import (
 
 func main() {
 	if len(os.Args) < 3 {
-		log.Fatal("invalid arguments")
+		fmt.Fprintln(os.Stderr, "invalid arguments")
+		os.Exit(1)
 	}
 
 	command := os.Args[1]
@@ -42,11 +43,13 @@ func main() {
 						newArgs[i+1] = args[i]
 					}
 					fmt.Println(command, strings.Join(newArgs, " "))
-					b, err := exec.Command(command, newArgs...).Output()
+					cmd := exec.Command(command, newArgs...)
+					cmd.Stdout = os.Stdout
+					cmd.Stderr = os.Stderr
+					err := cmd.Run()
 					if err != nil {
 						log.Fatal(err)
 					}
-					fmt.Println(string(b))
 				}
 			}
 		}
