@@ -1,5 +1,5 @@
 [git]
-l = "log"
+l = "log --graph"
 
 [kubectl]
 c = "completion"

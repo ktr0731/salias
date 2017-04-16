@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 	homedir "github.com/mitchellh/go-homedir"
@@ -65,8 +66,13 @@ func main() {
 
 	for k, alias := range aliases {
 		if k == subCommand {
-			newArgs := make([]string, 1+len(args))
-			newArgs[0] = alias.(string)
+			newArgs := make([]string, 0, 1+len(args))
+			if splitted := strings.Split(strings.TrimSpace(alias.(string)), " "); len(splitted) != 1 {
+				newArgs = append(splitted, newArgs...)
+			} else {
+				newArgs[0] = splitted[0]
+			}
+
 			for i := range args {
 				newArgs[i+1] = args[i]
 			}
