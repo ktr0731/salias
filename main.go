@@ -92,12 +92,22 @@ func main() {
 		cmd.Stderr = os.Stderr
 		if err = cmd.Run(); err != nil {
 			// コマンド自体のエラーは拾わない
+			// TODO: exit code 取得
 			os.Exit(1)
 		}
-		break
+		return
+	}
+
+	// Normal command
+	cmd := exec.Command(command, os.Args[2:]...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err = cmd.Run(); err != nil {
+		// TODO: exit code 取得
+		os.Exit(1)
 	}
 }
 
 func showError(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, fmt.Sprintf("\\e[31msalias: %s\033[0m", format), args...)
+	fmt.Fprintf(os.Stderr, fmt.Sprintf("\x1b[31msalias: %s\x1b[0m\n", format), args...)
 }
