@@ -1,8 +1,8 @@
 package main
 
 import (
+	"bytes"
 	"os"
-	"os/exec"
 	"strings"
 	"testing"
 )
@@ -20,13 +20,20 @@ func TestMain(t *testing.T) {
 	resetEnv := setTestEnv("SALIAS_PATH", "./salias_test.toml")
 	defer resetEnv()
 
-	b, err := exec.Command("go", "run", "main.go", "git", "l").Output()
+	outBuf, errBuf := new(bytes.Buffer), new(bytes.Buffer)
+	exitCode, err := run(&commandIO{
+		writer:    outBuf,
+		errWriter: errBuf,
+	}, []string{"git", "l"})
 	if err != nil {
-		t.Error(err)
+		t.Errorf("error: %s, errBuf: %s", err, errBuf)
+	}
+	if exitCode != 0 {
+		t.Errorf("exit with %d", exitCode)
 	}
 
-	if len(b) == 0 {
-		t.Error(err)
+	if outBuf.Len() == 0 {
+		t.Error("output is empty")
 	}
 }
 
@@ -53,17 +60,24 @@ func TestMain_errors(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		b, err := exec.Command("go", append([]string{"run", "main.go"}, test.commands...)...).Output()
+		outBuf, errBuf := new(bytes.Buffer), new(bytes.Buffer)
+		exitCode, err := run(&commandIO{
+			writer:    outBuf,
+			errWriter: errBuf,
+		}, test.commands)
 		if err != nil {
-			t.Error(err)
+			t.Errorf("error: %s, errBuf: %s", err, errBuf)
+		}
+		if exitCode != 0 {
+			t.Errorf("exit with %d", exitCode)
 		}
 
-		if len(b) == 0 {
-			t.Error(err)
+		if outBuf.Len() == 0 {
+			t.Error("output is empty")
 		}
 
-		if !strings.Contains(string(b), test.expect) {
-			t.Errorf("expect: %s, actual: %s", test.expect, string(b))
+		if !strings.Contains(outBuf.String(), test.expect) {
+			t.Errorf("expect: %s, actual: %s", test.expect, outBuf)
 		}
 	}
 }

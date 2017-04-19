@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -13,20 +14,28 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 )
 
+type commandIO struct {
+	reader            io.Reader
+	writer, errWriter io.Writer
+}
+
 func main() {
-	exitCode, err := run()
+	exitCode, err := run(&commandIO{
+		writer:    os.Stdout,
+		errWriter: os.Stderr,
+	}, os.Args[1:])
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "\x1b[31msalias: %s\x1b[0m\n", err)
 	}
 	os.Exit(exitCode)
 }
 
-func run() (int, error) {
-	if len(os.Args) < 3 {
+func run(cmdIO *commandIO, args []string) (int, error) {
+	if len(args) < 2 {
 		return 1, errors.New("invalid arguments")
 	}
 
-	command, subCommand, args := os.Args[1], os.Args[2], os.Args[3:]
+	command, subCommand, subCommandArgs := args[0], args[1], args[2:]
 
 	dir, err := homedir.Dir()
 	if err != nil {
@@ -76,20 +85,20 @@ func run() (int, error) {
 
 		// コマンドラインから渡された引数 + エイリアス先の引数
 		subArgs := strings.TrimSpace(alias.(string))
-		newArgs := make([]string, 0, 1+len(args)+len(subArgs))
+		newArgs := make([]string, 0, 1+len(subCommandArgs)+len(subArgs))
 		if splitted := strings.Split(subArgs, " "); len(splitted) != 1 {
 			newArgs = append(splitted, newArgs...)
 		} else {
 			newArgs[0] = splitted[0]
 		}
 
-		for i := range args {
-			newArgs[i+1] = args[i]
+		for i, arg := range subCommandArgs {
+			newArgs[i+1] = arg
 		}
 
 		cmd := exec.Command(command, newArgs...)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		cmd.Stdout = cmdIO.writer
+		cmd.Stderr = cmdIO.errWriter
 		if err = cmd.Run(); err != nil {
 			// コマンド自体のエラーは拾わない
 			// TODO: exit code 取得
@@ -99,9 +108,9 @@ func run() (int, error) {
 	}
 
 	// Normal command
-	cmd := exec.Command(command, os.Args[2:]...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd := exec.Command(command, args[1:]...)
+	cmd.Stdout = cmdIO.writer
+	cmd.Stderr = cmdIO.errWriter
 	if err = cmd.Run(); err != nil {
 		// TODO: exit code 取得
 		return 1, nil
