@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -13,23 +14,28 @@ import (
 )
 
 func main() {
+	exitCode, err := run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "\x1b[31msalias: %s\x1b[0m\n", err)
+	}
+	os.Exit(exitCode)
+}
+
+func run() (int, error) {
 	if len(os.Args) < 3 {
-		showError("invalid arguments")
-		os.Exit(1)
+		return 1, errors.New("invalid arguments")
 	}
 
 	command, subCommand, args := os.Args[1], os.Args[2], os.Args[3:]
 
 	dir, err := homedir.Dir()
 	if err != nil {
-		showError("cannot get home dir: %s", err)
-		os.Exit(1)
+		return 1, fmt.Errorf("cannot get home dir: %s", err)
 	}
 	path := filepath.Join(dir, ".config", "salias", "salias.toml")
 	if envPath := os.Getenv("SALIAS_PATH"); envPath != "" {
 		if envPathAbs, err := filepath.Abs(envPath); err != nil {
-			showError("passed salias path is invalid")
-			os.Exit(1)
+			return 1, errors.New("passed salias path is invalid")
 		} else if envPath != "" {
 			path = envPathAbs
 		}
@@ -37,36 +43,30 @@ func main() {
 
 	_, err = os.Stat(path)
 	if os.IsNotExist(err) {
-		showError("config path: %s not found", path)
-		os.Exit(1)
+		return 1, fmt.Errorf("config path: %s not found", path)
 	} else if err != nil {
-		showError("file status error: %s", err)
-		os.Exit(1)
+		return 1, fmt.Errorf("file status error: %s", err)
 	}
 
 	bytes, err := ioutil.ReadFile(path)
 	if err != nil {
-		showError("cannot read salias.toml: %s", err)
-		os.Exit(1)
+		return 1, fmt.Errorf("cannot read salias.toml: %s", err)
 	}
 
 	var commands interface{}
 	err = toml.Unmarshal(bytes, &commands)
 	if err != nil {
-		showError("cannot unmarshal toml: %s", err)
-		os.Exit(1)
+		return 1, fmt.Errorf("cannot unmarshal toml: %s", err)
 	}
 
 	var ok bool
 	if commands, ok = commands.(map[string]interface{})[command]; !ok {
-		showError("no such command in commands managed by salias")
-		os.Exit(1)
+		return 1, errors.New("no such command in commands managed by salias")
 	}
 
 	var aliases map[string]interface{}
 	if aliases, ok = commands.(map[string]interface{}); !ok {
-		showError("no such sub-command in sub-commands by salias")
-		os.Exit(1)
+		return 1, errors.New("no such sub-command in sub-commands by salias")
 	}
 
 	for k, alias := range aliases {
@@ -93,9 +93,9 @@ func main() {
 		if err = cmd.Run(); err != nil {
 			// コマンド自体のエラーは拾わない
 			// TODO: exit code 取得
-			os.Exit(1)
+			return 1, nil
 		}
-		return
+		return 0, nil
 	}
 
 	// Normal command
@@ -104,10 +104,7 @@ func main() {
 	cmd.Stderr = os.Stderr
 	if err = cmd.Run(); err != nil {
 		// TODO: exit code 取得
-		os.Exit(1)
+		return 1, nil
 	}
-}
-
-func showError(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, fmt.Sprintf("\x1b[31msalias: %s\x1b[0m\n", format), args...)
+	return 0, nil
 }
