@@ -37,7 +37,7 @@ func execCmd(cmdIO *commandIO, command string, args ...string) int {
 
 func isExist(path string) bool {
 	_, err := os.Stat(path)
-	return err != nil
+	return err == nil
 }
 
 func getPath() (string, error) {
@@ -56,7 +56,7 @@ func getPath() (string, error) {
 		if isExist(path) {
 			return path, nil
 		}
-		return "", fmt.Errorf("config file is not exists")
+		return "", fmt.Errorf("Path specified by $SALIAS_PATH is not exists")
 	}
 
 	path = filepath.Join(dir, ".config", "salias", "salias.toml")
@@ -70,6 +70,21 @@ func getPath() (string, error) {
 	}
 
 	return "", errors.New("config file salias.toml not found")
+}
+
+func getCmds(path string) (interface{}, error) {
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read salias.toml: %s", err)
+	}
+
+	var commands interface{}
+	err = toml.Unmarshal(b, &commands)
+	if err != nil {
+		return nil, fmt.Errorf("cannot unmarshal toml: %s", err)
+	}
+
+	return commands, nil
 }
 
 func run(cmdIO *commandIO, args []string) (int, error) {
@@ -95,15 +110,9 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 		return 1, err
 	}
 
-	bytes, err := ioutil.ReadFile(path)
+	commands, err := getCmds(path)
 	if err != nil {
-		return 1, fmt.Errorf("cannot read salias.toml: %s", err)
-	}
-
-	var commands interface{}
-	err = toml.Unmarshal(bytes, &commands)
-	if err != nil {
-		return 1, fmt.Errorf("cannot unmarshal toml: %s", err)
+		return 1, err
 	}
 
 	var ok bool
