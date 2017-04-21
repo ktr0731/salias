@@ -19,15 +19,19 @@ type commandIO struct {
 	writer, errWriter io.Writer
 }
 
-func main() {
-	exitCode, err := run(&commandIO{
-		writer:    os.Stdout,
-		errWriter: os.Stderr,
-	}, os.Args[1:])
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "\x1b[31msalias: %s\x1b[0m\n", err)
+func showError(err error) {
+	fmt.Fprintf(os.Stderr, "\x1b[31msalias: %s\x1b[0m\n", err)
+}
+
+func execCmd(args ...string) int {
+	cmd := exec.Command(args)
+	cmd.Stdout = cmdIO.writer
+	cmd.Stderr = cmdIO.errWriter
+	if err := cmd.Run(); err != nil {
+		// TODO: exit code 取得
+		fmt.Fprintln(os.Stderr, err)
+		return 1
 	}
-	os.Exit(exitCode)
 }
 
 func run(cmdIO *commandIO, args []string) (int, error) {
@@ -35,17 +39,15 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 		return 1, errors.New("invalid arguments, please set least one command as argument")
 	}
 
+	// Init
+	if args[0] == "__init__" {
+		initSalias()
+		return 0, nil
+	}
+
 	// コマンド名だけ指定された場合
 	if len(args) == 1 {
-		cmd := exec.Command(args[0])
-		cmd.Stdout = cmdIO.writer
-		cmd.Stderr = cmdIO.errWriter
-		if err := cmd.Run(); err != nil {
-			// TODO: exit code 取得
-			fmt.Fprintln(os.Stderr, err)
-			return 1, nil
-		}
-		return 0, nil
+		return execCmd(args[0]), nil
 	}
 
 	command, subCommand, subCommandArgs := args[0], args[1], args[2:]
@@ -109,24 +111,20 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 			newArgs = append(newArgs, arg)
 		}
 
-		cmd := exec.Command(command, newArgs...)
-		cmd.Stdout = cmdIO.writer
-		cmd.Stderr = cmdIO.errWriter
-		if err = cmd.Run(); err != nil {
-			// コマンド自体のエラーは拾わない
-			// TODO: exit code 取得
-			return 1, nil
-		}
-		return 0, nil
+		return execCmd(append([]string{command}), newArgs), nil
 	}
 
 	// Normal command
-	cmd := exec.Command(command, args[1:]...)
-	cmd.Stdout = cmdIO.writer
-	cmd.Stderr = cmdIO.errWriter
-	if err = cmd.Run(); err != nil {
-		// TODO: exit code 取得
-		return 1, nil
+	return execCmd(append([]string{command}, args[1:])), nil
+}
+
+func main() {
+	exitCode, err := run(&commandIO{
+		writer:    os.Stdout,
+		errWriter: os.Stderr,
+	}, os.Args[1:])
+	if err != nil {
+		showError(err)
 	}
-	return 0, nil
+	os.Exit(exitCode)
 }
