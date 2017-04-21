@@ -72,7 +72,7 @@ func getPath() (string, error) {
 	return "", errors.New("config file salias.toml not found")
 }
 
-func getCmds(path string) (interface{}, error) {
+func getCmds(path string) (map[string]interface{}, error) {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read salias.toml: %s", err)
@@ -84,7 +84,12 @@ func getCmds(path string) (interface{}, error) {
 		return nil, fmt.Errorf("cannot unmarshal toml: %s", err)
 	}
 
-	return cmds, nil
+	c, ok := cmds.(map[string]interface{})
+	if !ok {
+		return nil, errors.New("type assertion failed")
+	}
+
+	return c, nil
 }
 
 func run(cmdIO *commandIO, args []string) (int, error) {
@@ -116,12 +121,8 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 	}
 
 	var ok bool
-	if cmds, ok = cmds.(map[string]interface{})[cmd]; !ok {
-		return 1, errors.New("no such command in commands managed by salias")
-	}
-
 	var aliases map[string]interface{}
-	if aliases, ok = cmds.(map[string]interface{}); !ok {
+	if aliases, ok = cmds[cmd].(map[string]interface{}); !ok {
 		return 1, errors.New("no such sub-command in sub-commands by salias")
 	}
 

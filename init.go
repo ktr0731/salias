@@ -1,14 +1,26 @@
 package main
 
+import (
+	"fmt"
+	"os"
+)
+
 func initSalias() {
-	// bytes, err := ioutil.ReadFile(path)
-	// if err != nil {
-	// 	return 1, fmt.Errorf("cannot read salias.toml: %s", err)
-	// }
-	// var commands interface{}
-	// err := toml.Unmarshal(bytes, &commands)
-	// if err != nil {
-	// 	showError(err)
-	// 	os.Exit(1)
-	// }
+	path, err := getPath()
+	if err != nil {
+		showError(err)
+		os.Exit(1)
+	}
+
+	cmds, err := getCmds(path)
+	if err != nil {
+		showError(err)
+		os.Exit(1)
+	}
+
+	var aliases string
+	for key := range cmds {
+		aliases += fmt.Sprintf("alias %s='salias %s'\n", key, key)
+	}
+	fmt.Print(aliases)
 }
