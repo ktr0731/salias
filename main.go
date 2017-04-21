@@ -42,6 +42,7 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 		cmd.Stderr = cmdIO.errWriter
 		if err := cmd.Run(); err != nil {
 			// TODO: exit code 取得
+			fmt.Fprintln(os.Stderr, err)
 			return 1, nil
 		}
 		return 0, nil
