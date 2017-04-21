@@ -23,8 +23,8 @@ func showError(err error) {
 	fmt.Fprintf(os.Stderr, "\x1b[31msalias: %s\x1b[0m\n", err)
 }
 
-func execCmd(args ...string) int {
-	cmd := exec.Command(args)
+func execCmd(cmdIO *commandIO, command string, args ...string) int {
+	cmd := exec.Command(command, args...)
 	cmd.Stdout = cmdIO.writer
 	cmd.Stderr = cmdIO.errWriter
 	if err := cmd.Run(); err != nil {
@@ -32,6 +32,10 @@ func execCmd(args ...string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
+	return 0
+}
+
+func validPath() string {
 }
 
 func run(cmdIO *commandIO, args []string) (int, error) {
@@ -47,7 +51,7 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 
 	// コマンド名だけ指定された場合
 	if len(args) == 1 {
-		return execCmd(args[0]), nil
+		return execCmd(cmdIO, args[0]), nil
 	}
 
 	command, subCommand, subCommandArgs := args[0], args[1], args[2:]
@@ -111,11 +115,11 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 			newArgs = append(newArgs, arg)
 		}
 
-		return execCmd(append([]string{command}), newArgs), nil
+		return execCmd(cmdIO, command, newArgs...), nil
 	}
 
 	// Normal command
-	return execCmd(append([]string{command}, args[1:])), nil
+	return execCmd(cmdIO, command, args[1:]...), nil
 }
 
 func main() {
