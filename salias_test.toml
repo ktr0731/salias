@@ -4,6 +4,4 @@ l = "logs"
 [git]
 l = "log --graph --oneline"
 L = "| less"
-
-[kubectl]
-c = "completion"
+c = "config user.email"

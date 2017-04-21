@@ -35,7 +35,41 @@ func execCmd(cmdIO *commandIO, command string, args ...string) int {
 	return 0
 }
 
-func validPath() string {
+func isExist(path string) bool {
+	_, err := os.Stat(path)
+	return err != nil
+}
+
+func getPath() (string, error) {
+	dir, err := homedir.Dir()
+	if err != nil {
+		panic(fmt.Sprintf("cannot get home dir: %s", err))
+	}
+	// path := filepath.Join(dir, ".config", "salias", "salias.toml")
+	var path string
+	if envPath := os.Getenv("SALIAS_PATH"); envPath != "" {
+		if envPathAbs, err := filepath.Abs(envPath); err != nil {
+			panic("passed salias path is invalid")
+		} else if envPath != "" {
+			path = envPathAbs
+		}
+		if isExist(path) {
+			return path, nil
+		}
+		return "", fmt.Errorf("config file is not exists")
+	}
+
+	path = filepath.Join(dir, ".config", "salias", "salias.toml")
+	if isExist(path) {
+		return path, nil
+	}
+
+	path = filepath.Join(dir, "salias.toml")
+	if isExist(path) {
+		return path, nil
+	}
+
+	return "", errors.New("config file salias.toml not found")
 }
 
 func run(cmdIO *commandIO, args []string) (int, error) {
@@ -56,24 +90,9 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 
 	command, subCommand, subCommandArgs := args[0], args[1], args[2:]
 
-	dir, err := homedir.Dir()
+	path, err := getPath()
 	if err != nil {
-		return 1, fmt.Errorf("cannot get home dir: %s", err)
-	}
-	path := filepath.Join(dir, ".config", "salias", "salias.toml")
-	if envPath := os.Getenv("SALIAS_PATH"); envPath != "" {
-		if envPathAbs, err := filepath.Abs(envPath); err != nil {
-			return 1, errors.New("passed salias path is invalid")
-		} else if envPath != "" {
-			path = envPathAbs
-		}
-	}
-
-	_, err = os.Stat(path)
-	if os.IsNotExist(err) {
-		return 1, fmt.Errorf("config path: %s not found", path)
-	} else if err != nil {
-		return 1, fmt.Errorf("file status error: %s", err)
+		return 1, err
 	}
 
 	bytes, err := ioutil.ReadFile(path)
