@@ -23,8 +23,8 @@ func showError(err error) {
 	fmt.Fprintf(os.Stderr, "\x1b[31msalias: %s\x1b[0m\n", err)
 }
 
-func execCmd(cmdIO *commandIO, command string, args ...string) int {
-	cmd := exec.Command(command, args...)
+func execCmd(cmdIO *commandIO, cmdName string, args ...string) int {
+	cmd := exec.Command(cmdName, args...)
 	cmd.Stdout = cmdIO.writer
 	cmd.Stderr = cmdIO.errWriter
 	if err := cmd.Run(); err != nil {
@@ -78,13 +78,13 @@ func getCmds(path string) (interface{}, error) {
 		return nil, fmt.Errorf("cannot read salias.toml: %s", err)
 	}
 
-	var commands interface{}
-	err = toml.Unmarshal(b, &commands)
+	var cmds interface{}
+	err = toml.Unmarshal(b, &cmds)
 	if err != nil {
 		return nil, fmt.Errorf("cannot unmarshal toml: %s", err)
 	}
 
-	return commands, nil
+	return cmds, nil
 }
 
 func run(cmdIO *commandIO, args []string) (int, error) {
@@ -103,51 +103,51 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 		return execCmd(cmdIO, args[0]), nil
 	}
 
-	command, subCommand, subCommandArgs := args[0], args[1], args[2:]
+	cmd, subCmd, subCmdArgs := args[0], args[1], args[2:]
 
 	path, err := getPath()
 	if err != nil {
 		return 1, err
 	}
 
-	commands, err := getCmds(path)
+	cmds, err := getCmds(path)
 	if err != nil {
 		return 1, err
 	}
 
 	var ok bool
-	if commands, ok = commands.(map[string]interface{})[command]; !ok {
+	if cmds, ok = cmds.(map[string]interface{})[cmd]; !ok {
 		return 1, errors.New("no such command in commands managed by salias")
 	}
 
 	var aliases map[string]interface{}
-	if aliases, ok = commands.(map[string]interface{}); !ok {
+	if aliases, ok = cmds.(map[string]interface{}); !ok {
 		return 1, errors.New("no such sub-command in sub-commands by salias")
 	}
 
 	for k, alias := range aliases {
-		if k != subCommand {
+		if k != subCmd {
 			continue
 		}
 
 		// コマンドラインから渡された引数 + エイリアス先の引数
 		subArgs := strings.TrimSpace(alias.(string))
-		newArgs := make([]string, 0, 1+len(subCommandArgs)+len(subArgs))
+		newArgs := make([]string, 0, 1+len(subCmdArgs)+len(subArgs))
 		if splitted := strings.Split(subArgs, " "); len(splitted) != 1 {
 			newArgs = append(splitted, newArgs...)
 		} else {
 			newArgs = append(newArgs, splitted[0])
 		}
 
-		for _, arg := range subCommandArgs {
+		for _, arg := range subCmdArgs {
 			newArgs = append(newArgs, arg)
 		}
 
-		return execCmd(cmdIO, command, newArgs...), nil
+		return execCmd(cmdIO, cmd, newArgs...), nil
 	}
 
 	// Normal command
-	return execCmd(cmdIO, command, args[1:]...), nil
+	return execCmd(cmdIO, cmd, args[1:]...), nil
 }
 
 func main() {
