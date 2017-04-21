@@ -1,5 +1,9 @@
+[docker]
+l = "logs"
+
 [git]
 l = "log --graph --oneline"
+L = "| less"
 
 [kubectl]
 c = "completion"

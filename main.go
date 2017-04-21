@@ -31,8 +31,20 @@ func main() {
 }
 
 func run(cmdIO *commandIO, args []string) (int, error) {
-	if len(args) < 2 {
-		return 1, errors.New("invalid arguments")
+	if len(args) < 1 {
+		return 1, errors.New("invalid arguments, please set least one command as argument")
+	}
+
+	// コマンド名だけ指定された場合
+	if len(args) == 1 {
+		cmd := exec.Command(args[0])
+		cmd.Stdout = cmdIO.writer
+		cmd.Stderr = cmdIO.errWriter
+		if err := cmd.Run(); err != nil {
+			// TODO: exit code 取得
+			return 1, nil
+		}
+		return 0, nil
 	}
 
 	command, subCommand, subCommandArgs := args[0], args[1], args[2:]
@@ -89,11 +101,11 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 		if splitted := strings.Split(subArgs, " "); len(splitted) != 1 {
 			newArgs = append(splitted, newArgs...)
 		} else {
-			newArgs[0] = splitted[0]
+			newArgs = append(newArgs, splitted[0])
 		}
 
-		for i, arg := range subCommandArgs {
-			newArgs[i+1] = arg
+		for _, arg := range subCommandArgs {
+			newArgs = append(newArgs, arg)
 		}
 
 		cmd := exec.Command(command, newArgs...)
