@@ -1,4 +1,5 @@
 # Sub-Alias
+[![wercker status](https://app.wercker.com/status/33e127b80f4ea96bc02dc4bfac4dbdac/s/master "wercker status")](https://app.wercker.com/project/byKey/33e127b80f4ea96bc02dc4bfac4dbdac)  
 Apply alias to sub-commands
 
 ## Description  

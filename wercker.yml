@@ -1,0 +1,15 @@
+box: golang:1.8
+
+build:
+  steps:
+    - setup-go-workspace:
+      package-dir: github.com/lycoris0731/salias
+
+    - wercker/golint:
+      exclude: vendor
+
+    - script:
+      name: go build
+      exclude: vendor
+      code: |
+        make build

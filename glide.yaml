@@ -1,0 +1,4 @@
+package: github.com/lycoris0731/salias
+import:
+- package: github.com/BurntSushi/toml
+- package: github.com/mitchellh/go-homedir

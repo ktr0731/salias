@@ -1,2 +1,5 @@
 salias
 salias.toml
+
+vendor
+.wercker
