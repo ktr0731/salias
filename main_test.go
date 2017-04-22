@@ -38,7 +38,7 @@ func TestMain(t *testing.T) {
 }
 
 func TestMain_errors(t *testing.T) {
-	resetEnv := setTestEnv("SALIAS_PATH", "./salias_errors_test.toml")
+	resetEnv := setTestEnv("SALIAS_PATH", "./salias_test.toml")
 	defer resetEnv()
 
 	tests := []struct {
@@ -47,15 +47,11 @@ func TestMain_errors(t *testing.T) {
 	}{
 		{
 			[]string{},
-			"invalid arguments",
+			"invalid arguments, please set least one command as argument",
 		},
 		{
-			[]string{"makisekurisu"},
-			"no such command",
-		},
-		{
-			[]string{"git", "makisekurisu"},
-			"no such sub-command",
+			[]string{"g", "makisekurisu"},
+			"no such command in commands managed by salias",
 		},
 	}
 
@@ -65,19 +61,52 @@ func TestMain_errors(t *testing.T) {
 			writer:    outBuf,
 			errWriter: errBuf,
 		}, test.commands)
-		if err != nil {
-			t.Errorf("error: %s, errBuf: %s", err, errBuf)
-		}
-		if exitCode != 0 {
-			t.Errorf("exit with %d", exitCode)
+
+		if err == nil && errBuf.Len() == 0 {
+			t.Error("error not occurred")
 		}
 
-		if outBuf.Len() == 0 {
-			t.Error("output is empty")
+		if exitCode == 0 {
+			t.Error("exit with 0")
 		}
 
-		if !strings.Contains(outBuf.String(), test.expect) {
-			t.Errorf("expect: %s, actual: %s", test.expect, outBuf)
+		if errBuf.Len() != 0 && !strings.Contains(errBuf.String(), test.expect) {
+			t.Errorf("errBuf: expect: %s, actual: %s", test.expect, errBuf)
+		}
+
+		if err != nil && !strings.Contains(err.Error(), test.expect) {
+			t.Errorf("err: expect: %s, actual: %s", test.expect, err.Error())
+		}
+	}
+}
+
+func Test_getPath_errors(t *testing.T) {
+	resetEnv := setTestEnv("SALIAS_PATH", "./salias_test.toml")
+	defer resetEnv()
+
+	tests := []struct {
+		path   string
+		expect string
+	}{
+		{
+			path:   "./hoge.toml",
+			expect: "path specified by $SALIAS_PATH is not exists",
+		},
+		{
+			path:   "",
+			expect: "config file salias.toml not found",
+		},
+	}
+
+	for _, test := range tests {
+		resetEnv = setTestEnv("SALIAS_PATH", test.path)
+		_, err := getPath()
+		if err == nil {
+			t.Error("error not occurred")
+		}
+
+		if !strings.Contains(err.Error(), test.expect) {
+			t.Errorf("expect: %s, actual: %s", test.expect, err.Error())
 		}
 	}
 }

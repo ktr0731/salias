@@ -43,20 +43,20 @@ func isExist(path string) bool {
 func getPath() (string, error) {
 	dir, err := homedir.Dir()
 	if err != nil {
-		panic(fmt.Sprintf("cannot get home dir: %s", err))
+		return "", fmt.Errorf("cannot get home dir: %s", err)
 	}
 	// path := filepath.Join(dir, ".config", "salias", "salias.toml")
 	var path string
 	if envPath := os.Getenv("SALIAS_PATH"); envPath != "" {
 		if envPathAbs, err := filepath.Abs(envPath); err != nil {
-			panic("passed salias path is invalid")
+			return "", errors.New("passed salias path is invalid")
 		} else if envPath != "" {
 			path = envPathAbs
 		}
 		if isExist(path) {
 			return path, nil
 		}
-		return "", fmt.Errorf("Path specified by $SALIAS_PATH is not exists")
+		return "", errors.New("path specified by $SALIAS_PATH is not exists")
 	}
 
 	path = filepath.Join(dir, ".config", "salias", "salias.toml")
@@ -123,7 +123,7 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 	var ok bool
 	var aliases map[string]interface{}
 	if aliases, ok = cmds[cmd].(map[string]interface{}); !ok {
-		return 1, errors.New("no such sub-command in sub-commands by salias")
+		return 1, errors.New("no such command in commands managed by salias")
 	}
 
 	for k, alias := range aliases {

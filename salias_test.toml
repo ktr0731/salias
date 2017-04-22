@@ -4,4 +4,3 @@ l = "logs"
 [git]
 l = "log --graph --oneline"
 L = "| less"
-c = "config user.email"
