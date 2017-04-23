@@ -29,7 +29,6 @@ func execCmd(cmdIO *commandIO, cmdName string, args ...string) int {
 	cmd.Stderr = cmdIO.errWriter
 	if err := cmd.Run(); err != nil {
 		// TODO: exit code 取得
-		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
 	return 0
