@@ -15,7 +15,34 @@ Infrequently, we want to use `alias` to sub-command.
 However, `alias` command can apply for command only.  
 
 `salias` means sub-alias. `salias` makes it possible to apply alias to sub-commands.  
-Therefore, for example, `docker inspect` can alias to `docker i`.  
+
+## Example
+~/.salias.toml
+``` toml 
+[go]
+i = "install"
+b = "build"
+r = "run"
+
+[docker]
+i = "image"
+c = "container"
+
+[docker-compose]
+l = "logs -f"
+```
+
+``` bash
+$ go i github.com/golang/go
+# Equivalent to `go install github.com/golang/go` 
+
+$ docker i ls
+# Equivalent to `docker image ls`
+
+$ alias d=docker
+$ d c ls
+# Equivalent to `docker container ls`
+```
 
 ## Equipments
 - Go v1.8 or newer
