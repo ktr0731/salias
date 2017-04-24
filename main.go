@@ -44,7 +44,7 @@ func getPath() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("cannot get home dir: %s", err)
 	}
-	// path := filepath.Join(dir, ".config", "salias", "salias.toml")
+
 	var path string
 	if envPath := os.Getenv("SALIAS_PATH"); envPath != "" {
 		if envPathAbs, err := filepath.Abs(envPath); err != nil {
@@ -58,7 +58,11 @@ func getPath() (string, error) {
 		return "", errors.New("path specified by $SALIAS_PATH is not exists")
 	}
 
-	path = filepath.Join(dir, ".config", "salias", "salias.toml")
+	xdgConfigHome := os.Getenv("XDG_CONFIG_HOME")
+	if xdgConfigHome == "" {
+		xdgConfigHome = filepath.Join(dir, ".config")
+	}
+	path = filepath.Join(xdgConfigHome, "salias", "salias.toml")
 	if isExist(path) {
 		return path, nil
 	}
