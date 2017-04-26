@@ -62,14 +62,20 @@ func getPath() (string, error) {
 	if xdgConfigHome == "" {
 		xdgConfigHome = filepath.Join(dir, ".config")
 	}
-	path = filepath.Join(xdgConfigHome, "salias", "salias.toml")
-	if isExist(path) {
-		return path, nil
+
+	paths := []string{"salias.toml", ".salias.toml"}
+	for _, name := range paths {
+		path = filepath.Join(xdgConfigHome, "salias", name)
+		if isExist(path) {
+			return path, nil
+		}
 	}
 
-	path = filepath.Join(dir, "salias.toml")
-	if isExist(path) {
-		return path, nil
+	for _, name := range paths {
+		path = filepath.Join(dir, name)
+		if isExist(path) {
+			return path, nil
+		}
 	}
 
 	return "", errors.New("config file salias.toml not found")
