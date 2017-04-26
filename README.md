@@ -48,7 +48,7 @@ $ d c ls
 
 ## Equipments
 - Go v1.8 or newer
-- bash or zsh
+- bash, Zsh or fish
 
 ## Installation
 ``` sh
@@ -62,9 +62,16 @@ Please set the file to one of following.
 - $XDG_CONFIG_HOME/salias/salias.toml
 - $HOME/salias.toml
 
-Add following command to `.bashrc` or `.zshrc`.  
+Add following command.  
+
+`.bashrc` or `.zshrc`.  
 ``` sh
 source <(salias __init__)
+```
+
+`config.fish`
+``` sh
+source (salias __init__ | psub)
 ```
 
 ## License
