@@ -74,5 +74,19 @@ source <(salias __init__)
 source (salias __init__ | psub)
 ```
 
+## How It Works
+When initialization, `salias` registers the command as salias's alias (in fish: abbr).  
+``` sh
+# [go]
+# b = "build"
+$ source <(salias __init__)
+$ type go
+go is an alias for salias go
+```
+
+`salias` find sub-alias that is sub-command of passed command as arguments.  
+If hit sub-alias, execute it.  
+Or not found, execute as it is.  
+
 ## License
 Please see [LICENSE](./LICENSE).
