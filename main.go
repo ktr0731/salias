@@ -25,6 +25,7 @@ func showError(err error) {
 
 func execCmd(cmdIO *commandIO, cmdName string, args ...string) int {
 	cmd := exec.Command(cmdName, args...)
+	cmd.Stdin = cmdIO.reader
 	cmd.Stdout = cmdIO.writer
 	cmd.Stderr = cmdIO.errWriter
 	if err := cmd.Run(); err != nil {
@@ -162,6 +163,7 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 
 func main() {
 	exitCode, err := run(&commandIO{
+		reader:    os.Stdin,
 		writer:    os.Stdout,
 		errWriter: os.Stderr,
 	}, os.Args[1:])
