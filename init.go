@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 func initSalias() {
@@ -18,9 +19,13 @@ func initSalias() {
 		os.Exit(1)
 	}
 
+	command := "alias"
+	if strings.Contains(os.Getenv("SHELL"), "fish") {
+		command = "abbr"
+	}
 	var aliases string
 	for key := range cmds {
-		aliases += fmt.Sprintf("alias %s='salias %s'\n", key, key)
+		aliases += fmt.Sprintf("%s %s='salias %s'\n", command, key, key)
 	}
 	fmt.Print(aliases)
 }
