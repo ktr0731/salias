@@ -75,7 +75,7 @@ source (salias __init__ | psub)
 ```
 
 ## How It Works
-When initialization, `salias` registers the command as salias's alias (in fish: abbr).  
+When initialization, `salias` registers the command as salias's alias.  
 ``` sh
 # [go]
 # b = "build"
