@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -37,15 +36,6 @@ func execCmd(cmdIO *commandIO, cmdName string, args ...string) int {
 		return 1
 	}
 	return 0
-	// cmd := exec.Command(cmdName, args...)
-	// cmd.Stdin = cmdIO.reader
-	// cmd.Stdout = cmdIO.writer
-	// cmd.Stderr = cmdIO.errWriter
-	// if err := cmd.Run(); err != nil {
-	// 	// TODO: exit code 取得
-	// 	return 1
-	// }
-	// return 0
 }
 
 func isExist(path string) bool {
@@ -96,15 +86,10 @@ func getPath() (string, error) {
 }
 
 func getCmds(path string) (map[string]interface{}, error) {
-	b, err := ioutil.ReadFile(path)
+	var cmds interface{}
+	_, err := toml.DecodeFile(path, &cmds)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read salias.toml: %s", err)
-	}
-
-	var cmds interface{}
-	err = toml.Unmarshal(b, &cmds)
-	if err != nil {
-		return nil, fmt.Errorf("cannot unmarshal toml: %s", err)
 	}
 
 	c, ok := cmds.(map[string]interface{})
@@ -122,7 +107,10 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 
 	// Init
 	if args[0] == "__init__" {
-		initSalias()
+		if err := initSalias(); err != nil {
+			return 0, err
+		}
+
 		return 0, nil
 	}
 
