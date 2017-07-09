@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/BurntSushi/toml"
 	homedir "github.com/mitchellh/go-homedir"
@@ -24,15 +26,26 @@ func showError(err error) {
 }
 
 func execCmd(cmdIO *commandIO, cmdName string, args ...string) int {
-	cmd := exec.Command(cmdName, args...)
-	cmd.Stdin = cmdIO.reader
-	cmd.Stdout = cmdIO.writer
-	cmd.Stderr = cmdIO.errWriter
-	if err := cmd.Run(); err != nil {
-		// TODO: exit code 取得
+	path, err := exec.LookPath(cmdName)
+	if err != nil {
+		log.Println(err)
+		return 1
+	}
+
+	if err := syscall.Exec(path, append([]string{cmdName}, args...), os.Environ()); err != nil {
+		log.Println("syscall.exec", err)
 		return 1
 	}
 	return 0
+	// cmd := exec.Command(cmdName, args...)
+	// cmd.Stdin = cmdIO.reader
+	// cmd.Stdout = cmdIO.writer
+	// cmd.Stderr = cmdIO.errWriter
+	// if err := cmd.Run(); err != nil {
+	// 	// TODO: exit code 取得
+	// 	return 1
+	// }
+	// return 0
 }
 
 func isExist(path string) bool {
