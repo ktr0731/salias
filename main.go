@@ -85,9 +85,14 @@ func getPath() (string, error) {
 	return "", errors.New("config file salias.toml not found")
 }
 
-func getCmds(path string) (map[string]interface{}, error) {
+func getCmds() (map[string]interface{}, error) {
+	path, err := getPath()
+	if err != nil {
+		return nil, err
+	}
+
 	var cmds interface{}
-	_, err := toml.DecodeFile(path, &cmds)
+	_, err = toml.DecodeFile(path, &cmds)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read salias.toml: %s", err)
 	}
@@ -110,23 +115,17 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 		if err := initSalias(); err != nil {
 			return 0, err
 		}
-
 		return 0, nil
 	}
 
-	// コマンド名だけ指定された場合
+	// just like salias <command>
 	if len(args) == 1 {
 		return execCmd(cmdIO, args[0]), nil
 	}
 
 	cmd, subCmd, subCmdArgs := args[0], args[1], args[2:]
 
-	path, err := getPath()
-	if err != nil {
-		return 1, err
-	}
-
-	cmds, err := getCmds(path)
+	cmds, err := getCmds()
 	if err != nil {
 		return 1, err
 	}
