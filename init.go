@@ -5,12 +5,7 @@ import (
 )
 
 func initSalias() error {
-	path, err := getPath()
-	if err != nil {
-		return err
-	}
-
-	cmds, err := getCmds(path)
+	cmds, err := getCmds()
 	if err != nil {
 		return err
 	}

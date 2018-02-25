@@ -130,30 +130,34 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 		return 1, err
 	}
 
-	var ok bool
-	var aliases map[string]interface{}
-	if aliases, ok = cmds[cmd].(map[string]interface{}); !ok {
+	// if an executable "cmd", but not in salias config file
+	aliases, ok := cmds[cmd].(map[string]interface{})
+	if !ok {
 		return 1, errors.New("no such command in commands managed by salias")
 	}
 
-	for k, alias := range aliases {
-		if k != subCmd {
+	for subCmdName, ialias := range aliases {
+		if subCmdName != subCmd {
 			continue
 		}
 
-		// コマンドラインから渡された引数 + エイリアス先の引数
-		subArgs := strings.TrimSpace(alias.(string))
+		alias := ialias.(string)
+
+		// has "!" prefix for another command
+		if strings.HasPrefix(alias, "!") {
+			alias = alias[1:]
+			subArgs := strings.Split(strings.TrimSpace(alias), " ")
+			if len(subArgs) == 1 {
+				return execCmd(cmdIO, subArgs[0]), nil
+			}
+			return execCmd(cmdIO, subArgs[0], subArgs[1:]...), nil
+		}
+
+		// args passed by alias + args passed by command-line
+		subArgs := strings.Split(strings.TrimSpace(alias), " ")
 		newArgs := make([]string, 0, 1+len(subCmdArgs)+len(subArgs))
-		if splitted := strings.Split(subArgs, " "); len(splitted) != 1 {
-			newArgs = append(splitted, newArgs...)
-		} else {
-			newArgs = append(newArgs, splitted[0])
-		}
 
-		for _, arg := range subCmdArgs {
-			newArgs = append(newArgs, arg)
-		}
-
+		newArgs = append(subArgs, append(newArgs, subCmdArgs...)...)
 		return execCmd(cmdIO, cmd, newArgs...), nil
 	}
 

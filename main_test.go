@@ -16,7 +16,7 @@ func setTestEnv(key, val string) func() {
 	}
 }
 
-func TestMain(t *testing.T) {
+func Test_run(t *testing.T) {
 	resetEnv := setTestEnv("SALIAS_PATH", "./salias_test.toml")
 	defer resetEnv()
 
