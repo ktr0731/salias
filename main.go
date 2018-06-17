@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -13,6 +12,8 @@ import (
 
 	"github.com/BurntSushi/toml"
 	homedir "github.com/mitchellh/go-homedir"
+	"github.com/pkg/errors"
+	xdgbasedir "github.com/zchee/go-xdgbasedir"
 )
 
 type commandIO struct {
@@ -32,7 +33,6 @@ func execCmd(cmdIO *commandIO, cmdName string, args ...string) int {
 	}
 
 	if err := syscall.Exec(path, append([]string{cmdName}, args...), os.Environ()); err != nil {
-		log.Println("syscall.exec", err)
 		return 1
 	}
 	return 0
@@ -44,12 +44,23 @@ func isExist(path string) bool {
 }
 
 func getPath() (string, error) {
+	var path string
+	paths := []string{"salias.toml", ".salias.toml"}
+
+	xdgConfigHome := xdgbasedir.ConfigHome()
+
+	// first, check xdg dir
+	for _, name := range paths {
+		path = filepath.Join(xdgConfigHome, "salias", name)
+		if isExist(path) {
+			return path, nil
+		}
+	}
 	dir, err := homedir.Dir()
 	if err != nil {
 		return "", fmt.Errorf("cannot get home dir: %s", err)
 	}
 
-	var path string
 	if envPath := os.Getenv("SALIAS_PATH"); envPath != "" {
 		if envPathAbs, err := filepath.Abs(envPath); err != nil {
 			return "", errors.New("passed salias path is invalid")
@@ -62,19 +73,7 @@ func getPath() (string, error) {
 		return "", errors.New("path specified by $SALIAS_PATH is not exists")
 	}
 
-	xdgConfigHome := os.Getenv("XDG_CONFIG_HOME")
-	if xdgConfigHome == "" {
-		xdgConfigHome = filepath.Join(dir, ".config")
-	}
-
-	paths := []string{"salias.toml", ".salias.toml"}
-	for _, name := range paths {
-		path = filepath.Join(xdgConfigHome, "salias", name)
-		if isExist(path) {
-			return path, nil
-		}
-	}
-
+	// if not found, check home dir
 	for _, name := range paths {
 		path = filepath.Join(dir, name)
 		if isExist(path) {
@@ -88,13 +87,13 @@ func getPath() (string, error) {
 func getCmds() (map[string]interface{}, error) {
 	path, err := getPath()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to find salias path")
 	}
 
 	var cmds interface{}
 	_, err = toml.DecodeFile(path, &cmds)
 	if err != nil {
-		return nil, fmt.Errorf("cannot read salias.toml: %s", err)
+		return nil, errors.Wrapf(err, "cannot read salias.toml: %s")
 	}
 
 	c, ok := cmds.(map[string]interface{})
@@ -110,10 +109,10 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 		return 1, errors.New("invalid arguments, please set least one command as argument")
 	}
 
-	// Init
+	// init
 	if args[0] == "__init__" {
 		if err := initSalias(); err != nil {
-			return 0, err
+			return 0, errors.Wrap(err, "failed to generate init script")
 		}
 		return 0, nil
 	}
@@ -127,7 +126,7 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 
 	cmds, err := getCmds()
 	if err != nil {
-		return 1, err
+		return 1, errors.Wrap(err, "failed to get commands from config file")
 	}
 
 	// if an executable "cmd", but not in salias config file
