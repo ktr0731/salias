@@ -165,6 +165,20 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 	return execCmd(cmdIO, cmd, args[1:]...), nil
 }
 
+func initSalias() error {
+	cmds, err := getCmds()
+	if err != nil {
+		return err
+	}
+
+	var aliases string
+	for key := range cmds {
+		aliases += fmt.Sprintf("alias %s='salias %s'\n", key, key)
+	}
+	fmt.Print(aliases)
+	return nil
+}
+
 func main() {
 	exitCode, err := run(&commandIO{
 		reader:    os.Stdin,
