@@ -5,16 +5,15 @@ REVISION := $(shell git rev-parse --short HEAD)
 version:
 	@echo "Version: $(VERSION)($(REVISION))"
 
-# Install Glide
-glide: 
-ifeq ($(shell which glide 2>/dev/null),)
-	mkdir -p $(GOPATH)/bin
-	curl -s https://glide.sh/get | sh
+# Install dep
+dep: 
+ifeq ($(shell which dep 2>/dev/null),)
+	curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 endif
 
 # Install Go dependencies
-deps: glide
-	glide install
+deps: dep
+	dep ensure
 
 # Test 
 test: deps
