@@ -2,7 +2,7 @@
 [![wercker status](https://app.wercker.com/status/33e127b80f4ea96bc02dc4bfac4dbdac/s/master "wercker status")](https://app.wercker.com/project/byKey/33e127b80f4ea96bc02dc4bfac4dbdac)  
 Apply alias to sub-commands
 
-![DEMO](./demo.gif)  
+![DEMO](https://user-images.githubusercontent.com/12953836/41504734-b98bbc96-7233-11e8-9435-8a6ebdecb587.gif)
 
 ## Description  
 I don't like longer commands. So I often use `alias`.  
