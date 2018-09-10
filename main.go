@@ -109,15 +109,7 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 		return 1, errors.New("invalid arguments, please set least one command as argument")
 	}
 
-	// init
-	if args[0] == "__init__" {
-		if err := initSalias(); err != nil {
-			return 0, errors.Wrap(err, "failed to generate init script")
-		}
-		return 0, nil
-	}
-
-	// just like salias <command>
+	// just like salias -r <command>
 	if len(args) == 1 {
 		return execCmd(cmdIO, args[0]), nil
 	}
@@ -164,26 +156,35 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 	return execCmd(cmdIO, cmd, args[1:]...), nil
 }
 
-func initSalias() error {
+func initSalias() (int, error) {
 	cmds, err := getCmds()
 	if err != nil {
-		return err
+		return 0, errors.Wrap(err, "failed to generate init script")
 	}
 
 	var aliases string
 	for key := range cmds {
-		aliases += fmt.Sprintf("alias %s='salias %s'\n", key, key)
+		aliases += fmt.Sprintf("alias %s='salias -r %s'\n", key, key)
 	}
 	fmt.Print(aliases)
-	return nil
+	return 0, nil
 }
 
 func main() {
-	exitCode, err := run(&commandIO{
-		reader:    os.Stdin,
-		writer:    os.Stdout,
-		errWriter: os.Stderr,
-	}, os.Args[1:])
+	var exitCode int
+	var err error
+
+	if os.Args[1] == "__init__" || os.Args[1] == "-i" {
+		exitCode, err = initSalias()
+	}
+	if os.Args[1] == "__run__" || os.Args[1] == "-r" {
+		exitCode, err = run(&commandIO{
+			reader:    os.Stdin,
+			writer:    os.Stdout,
+			errWriter: os.Stderr,
+		}, os.Args[2:])
+	}
+
 	if err != nil {
 		showError(err)
 	}
