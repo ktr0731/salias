@@ -170,19 +170,54 @@ func initSalias() (int, error) {
 	return 0, nil
 }
 
-func main() {
-	var exitCode int
-	var err error
-
-	if os.Args[1] == "__init__" || os.Args[1] == "-i" {
-		exitCode, err = initSalias()
+func setAlias(args []string) (int, error) {
+	// salias go in="install"
+	path, perr := getPath()
+	if perr != nil {
+		return 1, errors.Wrap(perr, "failed to find salias path")
 	}
-	if os.Args[1] == "__run__" || os.Args[1] == "-r" {
+
+	var v interface{}
+	if _, err := toml.DecodeFile(path, &v); err != nil {
+		return 1, errors.Wrapf(err, "cannot read salias.toml: %s")
+	}
+	m := v.(map[string]interface{})
+
+	var prog map[string]interface{}
+	if p := m[args[0]]; p != nil {
+		prog = p.(map[string]interface{})
+	} else {
+		prog = make(map[string]interface{})
+	}
+	cmd := strings.Split(args[1], "=")
+	prog[cmd[0]] = cmd[1]
+	m[args[0]] = prog
+
+	enc := toml.NewEncoder(os.Stdout)
+	if err := enc.Encode(m); err != nil {
+		return 1, errors.Wrap(err, "encode error")
+	}
+	return 0, nil
+}
+
+func main() {
+	var (
+		exitCode int
+		err      error
+	)
+
+	if len(os.Args) < 1 {
+		// show defined sub alias
+	} else if os.Args[1] == "__init__" || os.Args[1] == "-i" {
+		exitCode, err = initSalias()
+	} else if os.Args[1] == "__run__" || os.Args[1] == "-r" {
 		exitCode, err = run(&commandIO{
 			reader:    os.Stdin,
 			writer:    os.Stdout,
 			errWriter: os.Stderr,
 		}, os.Args[2:])
+	} else {
+		exitCode, err = setAlias(os.Args[1:])
 	}
 
 	if err != nil {
