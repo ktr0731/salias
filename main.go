@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -84,24 +85,48 @@ func getPath() (string, error) {
 	return "", errors.New("config file salias.toml not found")
 }
 
-func getCmds() (map[string]interface{}, error) {
+// map[go:map[i:install r:run] docker:map[i:image]]
+type commands map[string]command
+
+// map[i:install r:run]
+type command map[string]string
+
+func getCmds() (commands, error) {
 	path, err := getPath()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find salias path")
 	}
 
-	var cmds interface{}
+	var cmds commands
 	_, err = toml.DecodeFile(path, &cmds)
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot read salias.toml: %s")
 	}
 
-	c, ok := cmds.(map[string]interface{})
-	if !ok {
-		return nil, errors.New("type assertion failed")
+	return cmds, nil
+}
+
+func writeCmds(cmds commands) error {
+	buf := new(bytes.Buffer)
+	enc := toml.NewEncoder(buf)
+	if err := enc.Encode(&cmds); err != nil {
+		return errors.Wrap(err, "failed to encode")
 	}
 
-	return c, nil
+	path, perr := getPath()
+	if perr != nil {
+		return errors.Wrap(perr, "failed to find salias path")
+	}
+
+	file, ferr := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModeAppend)
+	if ferr != nil {
+		return errors.Wrap(ferr, "cannot open salias.toml")
+	}
+	defer file.Close()
+	if _, err := file.WriteString(buf.String()); err != nil {
+		return errors.Wrap(err, "write string error")
+	}
+	return nil
 }
 
 func run(cmdIO *commandIO, args []string) (int, error) {
@@ -109,7 +134,7 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 		return 1, errors.New("invalid arguments, please set least one command as argument")
 	}
 
-	// just like salias -r <command>
+	// just like: salias -r <command>
 	if len(args) == 1 {
 		return execCmd(cmdIO, args[0]), nil
 	}
@@ -122,17 +147,15 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 	}
 
 	// if an executable "cmd", but not in salias config file
-	aliases, ok := cmds[cmd].(map[string]interface{})
-	if !ok {
+	aliases := cmds[cmd]
+	if aliases == nil {
 		return 1, errors.New("no such command in commands managed by salias")
 	}
 
-	for subCmdName, ialias := range aliases {
+	for subCmdName, alias := range aliases {
 		if subCmdName != subCmd {
 			continue
 		}
-
-		alias := ialias.(string)
 
 		// has "!" prefix for another command
 		if strings.HasPrefix(alias, "!") {
@@ -171,31 +194,24 @@ func initSalias() (int, error) {
 }
 
 func setAlias(args []string) (int, error) {
-	// salias go in="install"
-	path, perr := getPath()
-	if perr != nil {
-		return 1, errors.Wrap(perr, "failed to find salias path")
+	// just like: salias go i="install"
+	cmds, cerr := getCmds()
+	if cerr != nil {
+		return 1, errors.Wrapf(cerr, "cannot read salias.toml: %s")
 	}
 
-	var v interface{}
-	if _, err := toml.DecodeFile(path, &v); err != nil {
-		return 1, errors.Wrapf(err, "cannot read salias.toml: %s")
-	}
-	m := v.(map[string]interface{})
-
-	var prog map[string]interface{}
-	if p := m[args[0]]; p != nil {
-		prog = p.(map[string]interface{})
+	var prog command
+	if p := cmds[args[0]]; p != nil {
+		prog = p
 	} else {
-		prog = make(map[string]interface{})
+		prog = make(command)
 	}
 	cmd := strings.Split(args[1], "=")
 	prog[cmd[0]] = cmd[1]
-	m[args[0]] = prog
+	cmds[args[0]] = prog
 
-	enc := toml.NewEncoder(os.Stdout)
-	if err := enc.Encode(m); err != nil {
-		return 1, errors.Wrap(err, "encode error")
+	if err := writeCmds(cmds); err != nil {
+		return 1, errors.Wrapf(err, "cannot write salias.toml: %s")
 	}
 	return 0, nil
 }
@@ -206,8 +222,8 @@ func main() {
 		err      error
 	)
 
-	if len(os.Args) < 1 {
-		// show defined sub alias
+	if len(os.Args) < 2 {
+		// TODO: show defined sub alias
 	} else if os.Args[1] == "__init__" || os.Args[1] == "-i" {
 		exitCode, err = initSalias()
 	} else if os.Args[1] == "__run__" || os.Args[1] == "-r" {
