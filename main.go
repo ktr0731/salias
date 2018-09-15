@@ -187,7 +187,7 @@ func initSalias() (int, error) {
 
 	var aliases string
 	for key := range cmds {
-		aliases += fmt.Sprintf("alias %s='salias -r %s'\n", key, key)
+		aliases += fmt.Sprintf("alias %s='salias --run %s'\n", key, key)
 	}
 	fmt.Print(aliases)
 	return 0, nil
