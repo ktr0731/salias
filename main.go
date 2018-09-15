@@ -100,7 +100,7 @@ func getCmds() (commands, error) {
 	var cmds commands
 	_, err = toml.DecodeFile(path, &cmds)
 	if err != nil {
-		return nil, errors.Wrapf(err, "cannot read salias.toml: %s")
+		return nil, errors.Wrap(err, "cannot read salias.toml")
 	}
 
 	return cmds, nil
@@ -197,45 +197,61 @@ func setAlias(args []string) (int, error) {
 	// just like: salias go i="install"
 	cmds, cerr := getCmds()
 	if cerr != nil {
-		return 1, errors.Wrapf(cerr, "cannot read salias.toml: %s")
+		return 1, errors.Wrap(cerr, "cannot read salias.toml")
 	}
 
-	var prog command
-	if p := cmds[args[0]]; p != nil {
-		prog = p
+	var cmd command
+	// make section of a command if not exist
+	if c := cmds[args[0]]; c != nil {
+		cmd = c
 	} else {
-		prog = make(command)
+		cmd = make(command)
 	}
-	cmd := strings.Split(args[1], "=")
-	prog[cmd[0]] = cmd[1]
-	cmds[args[0]] = prog
+	// alias[0]: name, alias[1]: value
+	alias := strings.Split(args[1], "=")
+	if len(alias) == 1 {
+		if value := cmds[args[0]][alias[0]]; value != "" {
+			fmt.Println(value)
+			return 0, nil
+		}
+		return 1, nil
+	}
+	cmd[alias[0]] = alias[1]
+	cmds[args[0]] = cmd
 
 	if err := writeCmds(cmds); err != nil {
-		return 1, errors.Wrapf(err, "cannot write salias.toml: %s")
+		return 1, errors.Wrap(err, "cannot write salias.toml")
 	}
 	return 0, nil
 }
 
-func main() {
-	var (
-		exitCode int
-		err      error
-	)
-
-	if len(os.Args) < 2 {
-		// TODO: show defined sub alias
-	} else if os.Args[1] == "__init__" || os.Args[1] == "-i" {
-		exitCode, err = initSalias()
-	} else if os.Args[1] == "__run__" || os.Args[1] == "-r" {
-		exitCode, err = run(&commandIO{
+func controller(args []string) (int, error) {
+	if len(args) == 1 {
+		// verify and show defined sub alias
+		cmds, err := getCmds()
+		if err != nil {
+			return 1, errors.Wrap(err, "verify salias.toml failed\n")
+		}
+		enc := toml.NewEncoder(os.Stdout)
+		enc.Encode(&cmds)
+		return 0, nil
+	}
+	switch args[1] {
+	case "--init", "-i", "__init__":
+		return initSalias()
+	case "--run", "-r":
+		return run(&commandIO{
 			reader:    os.Stdin,
 			writer:    os.Stdout,
 			errWriter: os.Stderr,
-		}, os.Args[2:])
-	} else {
-		exitCode, err = setAlias(os.Args[1:])
+		}, args[2:])
+	default:
+		return setAlias(args[1:])
 	}
+}
 
+func main() {
+	exitCode, err := controller(os.Args)
 	if err != nil {
 		showError(err)
 	}
