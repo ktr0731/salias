@@ -182,7 +182,7 @@ func run(cmdIO *commandIO, args []string) (int, error) {
 func initSalias() (int, error) {
 	cmds, err := getCmds()
 	if err != nil {
-		return 0, errors.Wrap(err, "failed to generate init script")
+		return 1, errors.Wrap(err, "failed to generate init script")
 	}
 
 	var aliases string
