@@ -7,6 +7,7 @@ Apply alias to sub-commands
 ## Description  
 I don't like longer commands. So I often use `alias`.  
 Just like following:  
+
 ``` sh
 $ alias d=docker
 $ d ps
@@ -19,30 +20,15 @@ However, `alias` command can apply for command only.
 `salias` means sub-alias. `salias` makes it possible to apply alias to sub-commands.  
 
 ## Example
-~/salias.toml
-``` toml 
-[go]
-i = "install"
-b = "build"
-r = "run"
-
-[docker]
-i = "image"
-c = "container"
-
-[docker-compose]
-l = "logs -f"
-```
-
 ``` bash
+$ salias go i=install
+$ salias docker c=container
+$ exec $SHELL # reload the shell
+
 $ go i github.com/golang/go
 # `go install github.com/golang/go` 
 
-$ docker i ls
-# `docker image ls`
-
-$ alias d=docker
-$ d c ls
+$ docker c ls
 # `docker container ls`
 ```
 
@@ -52,26 +38,36 @@ $ d c ls
 
 ## Installation
 ``` sh
+$ export GOPATH=~/go # if $GOPATH is not set
 $ go get github.com/lycoris0731/salias
+$ sudo ln $GOPATH/bin/salias /usr/bin/
 ```
 
 ## Usage
 ### Set sub-alias definition file
-Please set the file to one of following.  
+Please create one of these files:  
 - $SALIAS_PATH
+
 - $XDG_CONFIG_HOME/salias/salias.toml
+
 - $HOME/salias.toml
+
+Then use `salias <command> <subalias>=<subcommand>` to set sub-alias. Or edit `salias.toml` manually.
+
+### Make sub-alias initializes automatically
 
 Add following command.  
 
 `.bashrc` or `.zshrc`.  
+
 ``` sh
-source <(salias __init__)
+source <(salias --init) # or `salias -i` for short
 ```
 
 `config.fish`
+
 ``` sh
-source (salias __init__ | psub)
+source (salias --init | psub)
 ```
 
 ## How It Works
@@ -79,9 +75,9 @@ When initialization, `salias` registers the command as salias's alias.
 ``` sh
 # [go]
 # b = "build"
-$ source <(salias __init__)
+$ source <(salias --init)
 $ type go
-go is an alias for salias go
+go is an alias for salias --run go
 ```
 
 `salias` find sub-alias that is sub-command of passed command as arguments.  
