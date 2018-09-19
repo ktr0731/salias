@@ -193,7 +193,7 @@ func initSalias() (int, error) {
 	return 0, nil
 }
 
-func setAlias(args []string) (int, error) {
+func setAlias(program string, equation string) (int, error) {
 	// just like: salias go i="install"
 	cmds, cerr := getCmds()
 	if cerr != nil {
@@ -202,22 +202,24 @@ func setAlias(args []string) (int, error) {
 
 	var cmd command
 	// make section of a command if not exist
-	if c := cmds[args[0]]; c != nil {
+	if c := cmds[program]; c != nil {
 		cmd = c
 	} else {
 		cmd = make(command)
 	}
 	// alias[0]: name, alias[1]: value
-	alias := strings.Split(args[1], "=")
+	alias := strings.Split(equation, "=")
+	// just like: salias docker i
+	// show the value of a defined subalias
 	if len(alias) == 1 {
-		if value := cmds[args[0]][alias[0]]; value != "" {
+		if value := cmds[program][alias[0]]; value != "" {
 			fmt.Println(value)
 			return 0, nil
 		}
 		return 1, nil
 	}
 	cmd[alias[0]] = alias[1]
-	cmds[args[0]] = cmd
+	cmds[program] = cmd
 
 	if err := writeCmds(cmds); err != nil {
 		return 1, errors.Wrap(err, "cannot write salias.toml")
@@ -246,7 +248,10 @@ func controller(args []string) (int, error) {
 			errWriter: os.Stderr,
 		}, args[2:])
 	default:
-		return setAlias(args[1:])
+		if len(args) == 3 {
+			return setAlias(args[1], args[2])
+		}
+		return 1, errors.New("usage: salias <program> <subalias>=<value>")
 	}
 }
 
