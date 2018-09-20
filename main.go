@@ -189,6 +189,7 @@ func initSalias() (int, error) {
 	for key := range cmds {
 		aliases += fmt.Sprintf("alias %s='salias --run %s'\n", key, key)
 	}
+	aliases += "alias unsalias='salias --unsalias'\n"
 	fmt.Print(aliases)
 	return 0, nil
 }
@@ -227,6 +228,27 @@ func setSalias(program string, equation string) (int, error) {
 	return 0, nil
 }
 
+func unSalias(program string, sub string) (int, error) {
+	cmds, cerr := getCmds()
+	if cerr != nil {
+		return 1, errors.Wrap(cerr, "cannot read salias.toml")
+	}
+	// no such alias
+	if _, ok := cmds[program][sub]; !ok {
+		return 1, errors.New(fmt.Sprintf("no such subalias for %s: %s", program, sub))
+	}
+	if len(cmds[program]) == 1 {
+		// delete the section
+		delete(cmds, program)
+	} else {
+		delete(cmds[program], sub)
+	}
+	if err := writeCmds(cmds); err != nil {
+		return 1, errors.Wrap(err, "cannot write salias.toml")
+	}
+	return 0, nil
+}
+
 func controller(args []string) (int, error) {
 	if len(args) == 1 {
 		// verify and show defined sub alias
@@ -247,6 +269,11 @@ func controller(args []string) (int, error) {
 			writer:    os.Stdout,
 			errWriter: os.Stderr,
 		}, args[2:])
+	case "--unsalias", "-u":
+		if len(args) == 4 {
+			return unSalias(args[2], args[3])
+		}
+		return 1, errors.New("usage: unsalias <program> <subalias>")
 	default:
 		if len(args) == 3 {
 			return setSalias(args[1], args[2])
