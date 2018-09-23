@@ -30,7 +30,7 @@ $ salias <program> <subalias>=<subcommand>
 Remove a subalias:
 
 ```sh
-$ unsalias <program> <subalias>=<subcommand>
+$ unsalias <program> <subalias>
 ```
 
 For example:
