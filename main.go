@@ -189,36 +189,60 @@ func initSalias() (int, error) {
 	for key := range cmds {
 		aliases += fmt.Sprintf("alias %s='salias --run %s'\n", key, key)
 	}
+	aliases += "alias unsalias='salias --unsalias'\n"
 	fmt.Print(aliases)
 	return 0, nil
 }
 
-func setAlias(args []string) (int, error) {
+func setSalias(program string, equation string) (int, error) {
 	// just like: salias go i="install"
 	cmds, cerr := getCmds()
 	if cerr != nil {
 		return 1, errors.Wrap(cerr, "cannot read salias.toml")
 	}
 
-	var cmd command
-	// make section of a command if not exist
-	if c := cmds[args[0]]; c != nil {
-		cmd = c
-	} else {
-		cmd = make(command)
-	}
 	// alias[0]: name, alias[1]: value
-	alias := strings.Split(args[1], "=")
+	alias := strings.Split(equation, "=")
+	// if value is not provided, like: salias docker i
+	// show the value of a defined subalias
 	if len(alias) == 1 {
-		if value := cmds[args[0]][alias[0]]; value != "" {
+		if value, ok := cmds[program][alias[0]]; ok {
 			fmt.Println(value)
 			return 0, nil
 		}
 		return 1, nil
 	}
-	cmd[alias[0]] = alias[1]
-	cmds[args[0]] = cmd
 
+	if cmds[program][alias[0]] == alias[1] {
+		return 0, nil
+	}
+	// make a section of a command if not exist
+	if _, ok := cmds[program]; !ok {
+		cmds[program] = make(command)
+	}
+	cmds[program][alias[0]] = alias[1]
+
+	if err := writeCmds(cmds); err != nil {
+		return 1, errors.Wrap(err, "cannot write salias.toml")
+	}
+	return 0, nil
+}
+
+func unSalias(program string, sub string) (int, error) {
+	cmds, cerr := getCmds()
+	if cerr != nil {
+		return 1, errors.Wrap(cerr, "cannot read salias.toml")
+	}
+	// no such alias
+	if _, ok := cmds[program][sub]; !ok {
+		return 1, errors.New(fmt.Sprintf("no such subalias for %s: %s", program, sub))
+	}
+	if len(cmds[program]) == 1 {
+		// delete the section
+		delete(cmds, program)
+	} else {
+		delete(cmds[program], sub)
+	}
 	if err := writeCmds(cmds); err != nil {
 		return 1, errors.Wrap(err, "cannot write salias.toml")
 	}
@@ -245,8 +269,16 @@ func controller(args []string) (int, error) {
 			writer:    os.Stdout,
 			errWriter: os.Stderr,
 		}, args[2:])
+	case "--unsalias", "-u":
+		if len(args) == 4 {
+			return unSalias(args[2], args[3])
+		}
+		return 1, errors.New("usage: unsalias <program> <subalias>")
 	default:
-		return setAlias(args[1:])
+		if len(args) == 3 {
+			return setSalias(args[1], args[2])
+		}
+		return 1, errors.New("usage: salias <program> <subalias>=<value>")
 	}
 }
 
