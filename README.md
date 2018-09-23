@@ -19,9 +19,24 @@ However, `alias` command can apply for command only.
 
 `salias` means sub-alias. `salias` makes it possible to apply alias to sub-commands.  
 
-## Example
+## Usage
+
+Set a subalias:
+
+```sh
+$ salias <program> <subalias>=<subcommand>
+```
+
+Remove a subalias:
+
+```sh
+$ unsalias <program> <subalias>=<subcommand>
+```
+
+For example:
+
 ``` bash
-$ salias go i=install
+$ salias go i=install # set a sub-alias
 $ salias docker c=container
 $ exec $SHELL # reload the shell
 
@@ -30,9 +45,12 @@ $ go i github.com/golang/go
 
 $ docker c ls
 # `docker container ls`
+
+$ unsalias go i # delete a sub-alias
 ```
 
 ## Equipments
+
 - Go v1.8 or newer
 - bash, Zsh or fish
 
@@ -43,7 +61,6 @@ $ go get github.com/lycoris0731/salias
 $ sudo ln $GOPATH/bin/salias /usr/bin/
 ```
 
-## Usage
 ### Set sub-alias definition file
 Please create one of these files:  
 - $SALIAS_PATH
