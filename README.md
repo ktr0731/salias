@@ -51,7 +51,7 @@ $ unsalias go i # delete a sub-alias
 
 ## Equipments
 
-- Go v1.8 or newer
+- Go v1.11 or newer
 - bash, Zsh or fish
 
 ## Installation
