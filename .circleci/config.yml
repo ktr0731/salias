@@ -1,0 +1,30 @@
+version: 2
+jobs:
+  build:
+    working_directory: /go/salias
+    docker:
+      - image: circleci/golang:1.11.0
+    environment:
+      - GOCACHE: "/tmp/go/cache"
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - mod-{{ checksum "go.sum" }}
+
+      - run:
+          name: build
+          command: make build
+
+      - run:
+          name: test
+          command: make test
+
+      - save_cache:
+          key: mod-{{ checksum "go.sum" }}
+          paths:
+            - /go/pkg/mod
+          when: always
+

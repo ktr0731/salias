@@ -1,5 +1,5 @@
 # Sub-Alias
-[![wercker status](https://app.wercker.com/status/33e127b80f4ea96bc02dc4bfac4dbdac/s/master "wercker status")](https://app.wercker.com/project/byKey/33e127b80f4ea96bc02dc4bfac4dbdac)  
+[![CircleCI](https://circleci.com/gh/ktr0731/salias.svg?style=svg)](https://circleci.com/gh/ktr0731/salias)  
 Apply alias to sub-commands
 
 ![DEMO](https://user-images.githubusercontent.com/12953836/41504734-b98bbc96-7233-11e8-9435-8a6ebdecb587.gif)
