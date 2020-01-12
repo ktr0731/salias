@@ -51,14 +51,13 @@ $ unsalias go i # delete a sub-alias
 
 ## Equipments
 
-- Go v1.11 or newer
+- Go v1.13 or newer
 - bash, Zsh or fish
 
 ## Installation
 ``` sh
-$ export GOPATH=~/go # if $GOPATH is not set
-$ go get github.com/lycoris0731/salias
-$ sudo ln $GOPATH/bin/salias /usr/bin/
+$ go get github.com/ktr0731/salias
+$ sudo ln $GOPATH/bin/salias /usr/bin/ # If $GOPATH/bin is not in $PATH.
 ```
 
 ### Set sub-alias definition file
